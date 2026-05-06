@@ -266,6 +266,37 @@ html{width:100%;height:100%;overflow:hidden;}body{width:100%;height:100%;overflo
 .skypbox{background:var(--bg);border-radius:20px;padding:24px 20px;width:100%;max-width:320px;text-align:center;}
 
 canvas#sc{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9990;}
+
+/* ════ CALENDAR ════ */
+.cal-day{display:flex;flex-direction:column;align-items:center;padding:4px 2px;border-radius:10px;cursor:pointer;transition:background .14s;min-height:46px;position:relative;}
+.cal-day:active{background:var(--bg2);}
+.cal-day.today .cal-num{background:var(--grn);color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;}
+.cal-day.selected .cal-num{background:var(--grn2);color:var(--grn);border-radius:50%;border:1.5px solid var(--grn);width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.cal-day.other-month{opacity:.3;}
+.cal-num{font-size:14px;font-weight:500;color:var(--txt);line-height:28px;width:28px;text-align:center;}
+.cal-day.sunday .cal-num{color:#E53935;}
+.cal-day.saturday .cal-num{color:var(--blu);}
+.cal-dot-row{display:flex;gap:2px;margin-top:2px;justify-content:center;}
+.cal-dot{width:5px;height:5px;border-radius:50%;}
+
+/* EVENT CARD */
+.ev-card{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;background:var(--bg);border:.5px solid var(--bdr3);border-radius:14px;margin-bottom:8px;box-shadow:0 1px 5px rgba(0,0,0,.05);}
+.ev-card:active{background:var(--bg2);}
+.ev-date-badge{flex-shrink:0;width:44px;text-align:center;background:var(--bg2);border-radius:10px;padding:6px 4px;}
+.ev-date-m{font-size:9px;color:var(--txt2);font-weight:600;letter-spacing:.5px;}
+.ev-date-d{font-size:20px;font-weight:700;color:var(--txt);line-height:1.1;}
+.ev-body{flex:1;min-width:0;}
+.ev-title{font-size:13px;font-weight:600;color:var(--txt);}
+.ev-desc{font-size:11px;color:var(--txt2);margin-top:2px;line-height:1.5;}
+.ev-meta{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap;}
+.ev-author{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;}
+.ev-cat{font-size:10px;color:var(--txt2);}
+.ev-del{width:26px;height:26px;border-radius:50%;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;flex-shrink:0;color:var(--txt2);}
+
+.ev-cat-btn{font-size:11px;padding:5px 12px;border-radius:20px;border:.5px solid var(--bdr2);cursor:pointer;background:var(--bg2);color:var(--txt2);transition:all .15s;}
+.ev-cat-btn.on{background:var(--grn2);border-color:var(--grn);color:var(--grn);font-weight:600;}
+.ev-empty{text-align:center;padding:32px 20px;color:var(--txt2);font-size:13px;}
+
 </style>
 </head>
 <body>
@@ -317,12 +348,13 @@ canvas#sc{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none
     <div class="ti" onclick="goTo('pindrop')"><div class="tii">📍</div><div class="til">지도</div></div>
     <div class="ti" onclick="goTo('garden')"><div class="tii">🌷</div><div class="til">정원</div></div>
     <div class="ti" onclick="goTo('records')"><div class="tii">🖼</div><div class="til">기록</div></div>
+    <div class="ti" onclick="goTo('calendar')"><div class="tii">📅</div><div class="til">캘린더</div></div>
   </div>
 </div>
 
 <!-- ══ PIN DROP (Leaflet GPS map) ══ -->
 <div class="scr" id="s-pindrop" style="padding-bottom:0;">
-  <div class="sb"><span class="sbt">9:41</span><span class="sbi">● ● ▲</span></div>
+  <div class="sb"><span class="sbt clk-el">9:41</span><span class="sbi">● ● ▲</span></div>
   <div class="pdbnr">GPS 연동 중 · 출근길 산책로</div>
   <div class="pdbar">
     <div><div style="font-size:10px;color:var(--txt2);">탐색 중</div><div style="font-size:16px;font-weight:600;color:var(--txt);">출근길 산책로</div></div>
@@ -335,7 +367,7 @@ canvas#sc{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none
   <div id="leafletMapPD" style="flex:1;z-index:1;margin-top:8;min-height:0;"></div>
   <!-- Floating UI -->
   <div class="pd-ui-overlay">
-    <div class="pd-gps-pill" id="gpsPill"><div class="gps-dot"></div><span id="gpsText">위치 연결 중...</span></div>
+    <div class="pd-gps-pill" id="gpsPill" onclick="onGPSPillTap()" style="cursor:pointer;"><div class="gps-dot" id="gpsDotEl"></div><span id="gpsText">위치 확인 중...</span></div>
     <div class="pd-action-row">
       <div class="pd-btn" onclick="openPhotoModal()">
         <div class="pd-btn-ic" style="background:var(--grn);color:#fff;">📷</div>
@@ -356,6 +388,7 @@ canvas#sc{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none
     <div class="ti"><div class="tii on">📍</div><div class="til on">지도</div></div>
     <div class="ti" onclick="goTo('garden')"><div class="tii">🌷</div><div class="til">정원</div></div>
     <div class="ti" onclick="goTo('records')"><div class="tii">🖼</div><div class="til">기록</div></div>
+    <div class="ti" onclick="goTo('calendar')"><div class="tii">📅</div><div class="til">캘린더</div></div>
   </div>
   <!-- Gift sheet -->
   <div class="shov" id="shov" onclick="closeBSheet()"></div>
@@ -389,7 +422,7 @@ canvas#sc{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none
 
 <!-- ══ GARDEN ══ -->
 <div class="scr" id="s-garden">
-  <div class="sb"><span class="sbt">9:41</span><span class="sbi">● ● ▲</span></div>
+  <div class="sb"><span class="sbt clk-el">9:41</span><span class="sbi">● ● ▲</span></div>
   <div style="padding:0 16px 10px;flex-shrink:0;display:flex;align-items:center;gap:9px;">
     <div onclick="goTo('home')" style="width:27px;height:27px;border-radius:50%;border:.5px solid var(--bdr3);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--txt2);">‹</div>
     <div><div style="font-size:16px;font-weight:600;color:var(--txt);">우리의 정원</div><div style="font-size:11px;color:var(--txt2);">도착할 때마다 튤립이 피어나요 🌷</div></div>
@@ -436,7 +469,7 @@ canvas#sc{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none
 
 <!-- ══ RECORDS ══ -->
 <div class="scr" id="s-records">
-  <div class="sb"><span class="sbt">9:41</span><span class="sbi">● ● ▲</span></div>
+  <div class="sb"><span class="sbt clk-el">9:41</span><span class="sbi">● ● ▲</span></div>
   <div style="padding:0 16px 8px;flex-shrink:0;"><div style="font-size:16px;font-weight:600;color:var(--txt);margin-bottom:2px;">기록</div><div style="font-size:11px;color:var(--txt2);">날짜별 사진 & 일상 아카이브</div></div>
   <div class="rtabs">
     <div class="rtab on" id="rtdaily" onclick="switchRec('daily')">📍 일상 기록</div>
@@ -691,59 +724,113 @@ let currentLocName='위치 확인 중...';
 let watchId=null;
 let gpsReady=false; // true once we have a real fix
 
-// ── 앱 시작 즉시 GPS 권한 요청 (지도 탭 열기 전에도 위치를 미리 확보) ──
+// ── GPS: iOS Safari는 HTTPS + 사용자 인터랙션 후 권한 팝업 표시 ──
+// permissions API로 상태 먼저 확인 → denied면 설정 안내 배너 표시
 function requestGPSEarly(){
   if(!navigator.geolocation){
-    // 기기가 GPS 미지원이면 기본 서울 시청 좌표
-    currentLat=37.5665; currentLng=126.9780; currentLocName='서울 (GPS 미지원)'; gpsReady=true;
-    updateGPSUI('GPS 미지원');
-    return;
+    currentLat=37.5665;currentLng=126.9780;currentLocName='서울';gpsReady=true;
+    updateGPSUI('GPS 미지원');return;
   }
-  updateGPSUI('위치 권한 요청 중...');
-  // 1) 빠른 단발 위치 먼저 (화면이 바로 내 위치로 열리게)
+  // permissions API 지원하면 상태 먼저 체크
+  if(navigator.permissions&&navigator.permissions.query){
+    navigator.permissions.query({name:'geolocation'}).then(result=>{
+      if(result.state==='denied'){
+        // 권한이 이미 거부됨 → 설정 안내 배너 표시
+        showGPSDeniedBanner();
+        currentLat=37.5665;currentLng=126.9780;currentLocName='서울';gpsReady=true;
+        updateGPSUI('📍 위치 권한 필요 — 탭해서 설정');
+      } else {
+        // 'granted' or 'prompt' → 바로 요청
+        doGetPosition();
+      }
+      // 권한 상태 변경 감지 (사용자가 설정에서 변경 시)
+      result.onchange=()=>{ if(result.state==='granted')doGetPosition(); };
+    }).catch(()=>doGetPosition()); // permissions API 실패해도 시도
+  } else {
+    doGetPosition(); // iOS 구버전 등 permissions API 없으면 바로 요청
+  }
+}
+
+function doGetPosition(){
+  updateGPSUI('위치 확인 중...');
+  // getCurrentPosition: 권한 팝업이 여기서 뜸
   navigator.geolocation.getCurrentPosition(
     pos=>{
-      currentLat=pos.coords.latitude;
-      currentLng=pos.coords.longitude;
-      gpsReady=true;
-      reverseGeocode(currentLat,currentLng);
-      updateGPSUI('GPS 연결됨 · 실시간 추적 중');
-      // 지도가 이미 열려 있으면 즉시 이동
-      if(lmPD){
-        lmPD.setView([currentLat,currentLng],16);
-        if(myMarker)myMarker.setLatLng([currentLat,currentLng]);
-        pathCoords=[[currentLat,currentLng]];
-        if(pathLine)pathLine.setLatLngs(pathCoords);
-      }
+      onGPSSuccess(pos.coords.latitude, pos.coords.longitude);
     },
     err=>{
-      console.warn('초기 GPS 실패:',err.message);
-      // 권한 거부 → 기본 서울 시청
-      currentLat=37.5665; currentLng=126.9780;
-      currentLocName='서울 (위치 권한 없음)'; gpsReady=true;
-      updateGPSUI('위치 권한 없음');
+      console.warn('GPS err code:',err.code,'msg:',err.message);
+      if(err.code===1){ // PERMISSION_DENIED
+        showGPSDeniedBanner();
+        updateGPSUI('📍 위치 권한 없음 — 탭해서 설정');
+      } else if(err.code===3){ // TIMEOUT
+        updateGPSUI('GPS 신호 약함 · 재시도 중...');
+        setTimeout(doGetPosition, 3000);
+        return;
+      } else {
+        updateGPSUI('위치 오류 · 기본값 사용');
+      }
+      currentLat=37.5665;currentLng=126.9780;currentLocName='서울';gpsReady=true;
     },
-    {enableHighAccuracy:true, timeout:8000, maximumAge:0}
+    {enableHighAccuracy:true, timeout:10000, maximumAge:0}
   );
-  // 2) 이후 watchPosition으로 계속 추적
+  // watchPosition으로 실시간 추적
+  if(watchId)navigator.geolocation.clearWatch(watchId);
   watchId=navigator.geolocation.watchPosition(
-    pos=>{
-      const lat=pos.coords.latitude, lng=pos.coords.longitude;
-      currentLat=lat; currentLng=lng; gpsReady=true;
-      reverseGeocode(lat,lng);
-      updateGPSUI('GPS 연결됨 · 실시간 추적 중');
-      updateMyPos(lat,lng,null); // locName은 reverseGeocode가 업데이트
-    },
-    err=>{
-      // watch 실패해도 getCurrentPosition이 이미 줬으면 괜찮음
-      if(!gpsReady){
-        currentLat=37.5665; currentLng=126.9780;
-        currentLocName='서울 (GPS 오류)'; gpsReady=true;
-        updateGPSUI('GPS 오류 · 기본 위치');
-      }
-    },
-    {enableHighAccuracy:true, maximumAge:3000, timeout:15000}
+    pos=>{ onGPSSuccess(pos.coords.latitude, pos.coords.longitude); },
+    err=>{ console.warn('watch err:',err.code); },
+    {enableHighAccuracy:true, maximumAge:5000, timeout:20000}
   );
+}
+
+
+// iOS: 사용자 탭으로 GPS 재시도 (Safari는 user gesture 후 권한 팝업이 더 잘 뜸)
+function onGPSPillTap(){
+  const txt=document.getElementById('gpsText').textContent;
+  if(txt.includes('권한')|| txt.includes('오류')||txt.includes('없음')){
+    updateGPSUI('위치 다시 시도 중...');
+    setTimeout(doGetPosition, 100);
+  } else if(txt.includes('연결됨')){
+    centerOnMe();
+  }
+}
+
+function onGPSSuccess(lat,lng){
+  currentLat=lat; currentLng=lng; gpsReady=true;
+  hideGPSDeniedBanner();
+  reverseGeocode(lat,lng);
+  updateGPSUI('● GPS 연결됨');
+  if(lmPD){
+    lmPD.setView([lat,lng],17);
+    if(myMarker)myMarker.setLatLng([lat,lng]);
+    if(!pathCoords.length)pathCoords=[[lat,lng]];
+    pathLine&&pathLine.setLatLngs(pathCoords);
+  }
+}
+
+// GPS 권한 거부 배너 (탭하면 설정 방법 안내)
+function showGPSDeniedBanner(){
+  let b=document.getElementById('gpsDeniedBanner');
+  if(!b){
+    b=document.createElement('div');
+    b.id='gpsDeniedBanner';
+    b.style.cssText='position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:#FF5722;color:#fff;font-size:12px;font-weight:600;text-align:center;padding:10px 16px calc(10px + var(--safe-t));z-index:9998;cursor:pointer;';
+    b.innerHTML='📍 위치 권한이 필요해요 — 탭해서 설정 방법 확인';
+    b.onclick=showGPSSettingsGuide;
+    document.body.appendChild(b);
+  }
+  b.style.display='block';
+}
+function hideGPSDeniedBanner(){
+  const b=document.getElementById('gpsDeniedBanner');
+  if(b)b.style.display='none';
+}
+function showGPSSettingsGuide(){
+  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const msg=isIOS
+    ? '아이폰 위치 권한 설정 방법:\n\n① 아이폰 설정 앱 열기\n② 개인 정보 보호 및 보안\n③ 위치 서비스\n④ Safari 웹사이트 → 앱 사용 중 허용\n\n또는:\n설정 → Safari → 위치 → 허용'
+    : '브라우저 주소창 왼쪽 🔒 아이콘\n→ 위치 → 허용\n\n또는 브라우저 설정에서 위치 권한 허용';
+  alert(msg);
 }
 
 // Nominatim 역지오코딩 (주소 → 한글 동네 이름)
@@ -770,9 +857,18 @@ function updateGPSUI(msg){
   const el=document.getElementById('gpsText');
   if(el)el.textContent=msg;
   const pill=document.getElementById('gpsPill');
+  const dot=document.getElementById('gpsDotEl');
   if(pill){
-    if(msg.includes('연결됨'))pill.style.background='var(--bg)';
-    else pill.style.background='#FFF9E6';
+    if(msg.includes('연결됨')){
+      pill.style.background='var(--bg)';
+      if(dot){dot.style.background='#2E7D32';dot.style.animation='blink 1.5s ease-in-out infinite';}
+    } else if(msg.includes('권한')||msg.includes('없음')||msg.includes('오류')){
+      pill.style.background='#FFF9E6';
+      if(dot){dot.style.background='#FF5722';dot.style.animation='none';}
+    } else {
+      pill.style.background='#FFF9E6';
+      if(dot){dot.style.background='#FFC107';dot.style.animation='blink 0.8s ease-in-out infinite';}
+    }
   }
 }
 
@@ -1203,12 +1299,21 @@ function goTo(name){
   }
   if(name==='garden'){renderArchiveMap();renderTripList();}
   if(name==='records'){renderRecords();}
+  if(name==='calendar'){renderCalendar();}
   if(name==='home'&&lmHome){setTimeout(()=>{lmHome.invalidateSize();drawFlight();renderHomeFlowers();},300);}
 }
 
 // CLOCK
-function tick(){const n=new Date();document.getElementById('clk').textContent=n.getHours()+':'+String(n.getMinutes()).padStart(2,'0');}
-tick();setInterval(tick,10000);
+function tick(){
+  const n=new Date();
+  const h=n.getHours(), m=String(n.getMinutes()).padStart(2,'0');
+  // 모든 status bar 시계 업데이트
+  document.querySelectorAll('.clk-el').forEach(el=>el.textContent=h+':'+m);
+  // 레거시 id="clk"
+  const clk=document.getElementById('clk');
+  if(clk)clk.textContent=h+':'+m;
+}
+tick();setInterval(tick,1000); // 1초마다 갱신
 const MOS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 document.getElementById('dlbl').textContent=MOS[new Date().getMonth()]+' '+new Date().getFullYear();
 
@@ -1224,12 +1329,197 @@ function burst(){
   draw();
 }
 
+
+// ═══════════════════════════════
+//  CALENDAR
+// ═══════════════════════════════
+const CAT_META={
+  flight:{emoji:'✈',color:'#1565C0',bg:'#E3F0FF'},
+  meeting:{emoji:'💑',color:'#E91E8C',bg:'#FFF0F6'},
+  birthday:{emoji:'🎂',color:'#FF7043',bg:'#FBE9E7'},
+  anniversary:{emoji:'💐',color:'#7B1FA2',bg:'#F3E5F5'},
+  plan:{emoji:'📌',color:'#2E7D32',bg:'#EAF3DE'},
+};
+const AU_META={
+  somi:{name:'쏘미',color:'#2E7D32',bg:'#EAF3DE'},
+  jungwon:{name:'정원',color:'#1565C0',bg:'#E3F0FF'},
+  both:{name:'함께',color:'#7B1FA2',bg:'#F3E5F5'},
+};
+
+// Pre-loaded events
+let events=[
+  {id:1,title:'첫 만남 기념일 💑',date:'2024-04-12',desc:'서울에서 처음 만난 날',author:'both',cat:'anniversary'},
+  {id:2,title:'도쿄 방문 ✈',date:'2026-08-02',desc:'KE703 08:30 출발',author:'somi',cat:'flight'},
+  {id:3,title:'쏘미 생일 🎂',date:'2026-06-15',desc:'',author:'jungwon',cat:'birthday'},
+];
+
+let calYear=new Date().getFullYear();
+let calMonth=new Date().getMonth();
+let calSelected=null;
+let evAuthor='somi';
+let evCat='flight';
+
+const MNAMES=['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+const MNAMES_EN=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+function renderCalendar(){
+  document.getElementById('cal-month-title').textContent=`${calYear}년 ${MNAMES[calMonth]}`;
+  const grid=document.getElementById('calGrid');
+  grid.innerHTML='';
+  const today=new Date();
+  const firstDay=new Date(calYear,calMonth,1).getDay();
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const daysInPrev=new Date(calYear,calMonth,0).getDate();
+  const total=Math.ceil((firstDay+daysInMonth)/7)*7;
+
+  for(let i=0;i<total;i++){
+    let day, isOther=false, month=calMonth, year=calYear;
+    if(i<firstDay){day=daysInPrev-firstDay+1+i;isOther=true;month=calMonth-1;if(month<0){month=11;year--;};}
+    else if(i>=firstDay+daysInMonth){day=i-firstDay-daysInMonth+1;isOther=true;month=calMonth+1;if(month>11){month=0;year++;};} 
+    else{day=i-firstDay+1;}
+    const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dow=i%7;
+    const isToday=year===today.getFullYear()&&month===today.getMonth()&&day===today.getDate();
+    const isSel=calSelected===dateStr;
+    const dayEvents=events.filter(e=>e.date===dateStr);
+
+    const d=document.createElement('div');
+    d.className='cal-day'+(isOther?' other-month':'')+(dow===0?' sunday':'')+(dow===6?' saturday':'')+(isToday?' today':'')+(isSel?' selected':'');
+    d.innerHTML=`<div class="cal-num">${day}</div><div class="cal-dot-row">${dayEvents.slice(0,3).map(e=>`<div class="cal-dot" style="background:${CAT_META[e.cat]?.color||'var(--grn)'}"></div>`).join('')}</div>`;
+    d.onclick=()=>selectCalDay(dateStr,dayEvents);
+    grid.appendChild(d);
+  }
+  renderEventList();
+}
+
+function selectCalDay(dateStr,dayEvents){
+  calSelected=dateStr;
+  renderCalendar();
+  const banner=document.getElementById('calSelBanner');
+  const d=new Date(dateStr);
+  banner.style.display='block';
+  document.getElementById('calSelDate').textContent=`${d.getFullYear()}년 ${MNAMES[d.getMonth()]} ${d.getDate()}일`;
+  document.getElementById('calSelCount').textContent=dayEvents.length?`일정 ${dayEvents.length}개`:' 일정 없음 — + 버튼으로 추가';
+  // Scroll event list to that date
+  renderEventList(dateStr);
+}
+
+function renderEventList(filterDate){
+  const list=document.getElementById('eventList');
+  list.innerHTML='';
+  let evs=filterDate
+    ? events.filter(e=>e.date===filterDate)
+    : [...events].sort((a,b)=>a.date.localeCompare(b.date));
+  // show upcoming first when no filter
+  if(!filterDate){
+    const today=new Date().toISOString().split('T')[0];
+    evs.sort((a,b)=>{
+      const aF=a.date>=today, bF=b.date>=today;
+      if(aF&&!bF)return -1; if(!aF&&bF)return 1;
+      return a.date.localeCompare(b.date);
+    });
+  }
+  if(!evs.length){
+    list.innerHTML=`<div class="ev-empty">📅<br>일정이 없어요<br><span style="font-size:11px;">+ 버튼으로 추가해보세요</span></div>`;
+    return;
+  }
+  evs.forEach(ev=>{
+    const d=new Date(ev.date);
+    const cm=CAT_META[ev.cat]||CAT_META.plan;
+    const am=AU_META[ev.author]||AU_META.both;
+    const today=new Date().toISOString().split('T')[0];
+    const isPast=ev.date<today;
+    const card=document.createElement('div');
+    card.className='ev-card';
+    card.style.opacity=isPast?.65:1;
+    card.innerHTML=`
+      <div class="ev-date-badge">
+        <div class="ev-date-m">${MNAMES_EN[d.getMonth()]}</div>
+        <div class="ev-date-d">${d.getDate()}</div>
+        <div style="font-size:8px;color:var(--txt2);">${d.getFullYear()}</div>
+      </div>
+      <div class="ev-body">
+        <div class="ev-title">${cm.emoji} ${ev.title}</div>
+        ${ev.desc?`<div class="ev-desc">${ev.desc}</div>`:''}
+        <div class="ev-meta">
+          <span class="ev-author" style="background:${am.bg};color:${am.color};">${am.name}</span>
+          <span class="ev-cat">${isPast?'✓ 지남':dDayLabel(ev.date)}</span>
+        </div>
+      </div>
+      <div class="ev-del" onclick="deleteEvent(${ev.id})">×</div>`;
+    list.appendChild(card);
+  });
+}
+
+function dDayLabel(dateStr){
+  const today=new Date();today.setHours(0,0,0,0);
+  const d=new Date(dateStr);d.setHours(0,0,0,0);
+  const diff=Math.round((d-today)/86400000);
+  if(diff===0)return'🎉 오늘!';
+  if(diff>0)return`D-${diff}`;
+  return`D+${Math.abs(diff)}`;
+}
+
+function deleteEvent(id){
+  events=events.filter(e=>e.id!==id);
+  renderCalendar();
+}
+
+function calPrev(){if(calMonth===0){calMonth=11;calYear--;}else calMonth--;renderCalendar();}
+function calNext(){if(calMonth===11){calMonth=0;calYear++;}else calMonth++;renderCalendar();}
+
+// Event modal
+function openEventModal(){
+  document.getElementById('evTitle').value='';
+  document.getElementById('evDate').value=calSelected||new Date().toISOString().split('T')[0];
+  document.getElementById('evDesc').value='';
+  setEvAuthor('somi');
+  document.querySelectorAll('.ev-cat-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelector('[data-cat="flight"]').classList.add('on');
+  evCat='flight';
+  document.getElementById('eventModal').style.display='flex';
+  requestAnimationFrame(()=>document.getElementById('eventModal').classList.add('open'));
+}
+document.getElementById('eventModal').addEventListener('click',function(e){if(e.target===this)closeM('eventModal');});
+
+function setEvAuthor(a){
+  evAuthor=a;
+  ['somi','jungwon','both'].forEach(k=>{
+    const el=document.getElementById('ev'+k.charAt(0).toUpperCase()+k.slice(1));
+    const am=AU_META[k];
+    el.style.border=a===k?`2px solid ${am.color}`:'.5px solid var(--bdr2)';
+    el.style.background=a===k?am.bg:'';
+    el.querySelector('div:last-child').style.color=a===k?am.color:'var(--txt)';
+  });
+}
+
+function setEvCat(el,cat){
+  document.querySelectorAll('.ev-cat-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  evCat=cat;
+}
+
+function saveEvent(){
+  const title=document.getElementById('evTitle').value.trim();
+  const date=document.getElementById('evDate').value;
+  const desc=document.getElementById('evDesc').value.trim();
+  if(!title){alert('제목을 입력해주세요');return;}
+  if(!date){alert('날짜를 선택해주세요');return;}
+  events.push({id:Date.now(),title,date,desc,author:evAuthor,cat:evCat});
+  events.sort((a,b)=>a.date.localeCompare(b.date));
+  closeM('eventModal');
+  renderCalendar();
+  burst();
+}
+
+
 // INIT — GPS 권한 요청을 가장 먼저 실행
 requestGPSEarly();
 initHomeMap();
 renderArchiveMap();
 renderTripList();
 renderRecords();
+renderCalendar();
 </script>
 </body>
 </html>
